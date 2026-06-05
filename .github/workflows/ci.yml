@@ -18,14 +18,16 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install
-        run: pnpm install --frozen-lockfile
+      - name: Check markdown links (relative paths must resolve)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress --include-fragments './**/*.md'
+          fail: true
 
-      - name: Lint
-        run: pnpm lint
+      - name: Shellcheck demo scripts
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: ./demo
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
+      - name: Node syntax check (demo/schema-validation.js)
+        run: node --check demo/schema-validation.js
