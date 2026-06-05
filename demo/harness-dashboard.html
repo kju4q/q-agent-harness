@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Harness Dashboard Demo</title>
+    <style>
+      :root {
+        --bg: #f3efe7;
+        --panel: #fffdf8;
+        --ink: #1f1b17;
+        --muted: #6d6258;
+        --accent: #136f63;
+        --accent-soft: #cde8e2;
+        --warn: #c96c1a;
+        --line: #ded4c8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, #fff8df 0, transparent 32%),
+          linear-gradient(135deg, #f7f1e7, #ece6db);
+        color: var(--ink);
+      }
+      .wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 32px;
+      }
+      .hero {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 22px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: 40px;
+        letter-spacing: -0.04em;
+      }
+      .hero p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+      }
+      .badge {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-size: 13px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: 0 16px 30px rgba(27, 21, 14, 0.06);
+      }
+      .panel h2 {
+        margin: 0 0 8px;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .panel h3 {
+        margin: 0 0 14px;
+        font-size: 26px;
+        letter-spacing: -0.03em;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .stat {
+        background: #f8f3eb;
+        border-radius: 18px;
+        padding: 14px;
+      }
+      .stat strong {
+        display: block;
+        font-size: 26px;
+        margin-bottom: 4px;
+      }
+      .stat span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .journeys {
+        display: grid;
+        gap: 10px;
+      }
+      .journey {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .pill {
+        font-size: 12px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .pill.warn {
+        background: #fbe5d2;
+        color: var(--warn);
+      }
+      .bars {
+        display: grid;
+        gap: 14px;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: 110px 1fr 52px;
+        gap: 12px;
+        align-items: center;
+        font-size: 14px;
+      }
+      .bar {
+        height: 12px;
+        background: #efe7db;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .bar > div {
+        height: 100%;
+        background: linear-gradient(90deg, #1b8f7e, #4eb9a8);
+      }
+      .logbox {
+        background: #1d1a17;
+        color: #f9f2e7;
+        border-radius: 18px;
+        padding: 16px;
+        font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+        min-height: 250px;
+      }
+      .logbox .muted { color: #d5bfa5; }
+      .logbox .ok { color: #7be0b3; }
+      .logbox .warn { color: #ffcc84; }
+      .mini {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+      }
+      .queue {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        padding: 8px 11px;
+        border-radius: 12px;
+        background: #f4ecdf;
+        border: 1px solid var(--line);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <div>
+          <h1>Agent Harness Dashboard</h1>
+          <p>One place to watch tests, approvals, runtime health, and user-facing flows.</p>
+        </div>
+        <div class="badge">Live demo • Local worktree • Safe mode</div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Product Validation</h2>
+          <h3>Checkout flow passes with guardrails enabled</h3>
+          <div class="stats">
+            <div class="stat">
+              <strong>12/12</strong>
+              <span>Verification checks passed</span>
+            </div>
+            <div class="stat">
+              <strong>742ms</strong>
+              <span>P95 response latency</span>
+            </div>
+            <div class="stat">
+              <strong>1</strong>
+              <span>Approval step required</span>
+            </div>
+          </div>
+          <div class="journeys">
+            <div class="journey">
+              <div>
+                <strong>Sign up -> create workspace</strong>
+                <div class="muted">UI smoke test + trace pass</div>
+              </div>
+              <div class="pill">Healthy</div>
+            </div>
+            <div class="journey">
+              <div>
+                <strong>Edit billing profile</strong>
+                <div class="muted">Form schema validated at submit</div>
+              </div>
+              <div class="pill">Protected</div>
+            </div>
+            <div class="journey">
+              <div>
+                <strong>Delete environment</strong>
+                <div class="muted">Requires approval gate before tool call</div>
+              </div>
+              <div class="pill warn">Human approval</div>
+            </div>
+          </div>
+
+          <div class="mini">
+            <div>
+              <h2>Approvals</h2>
+              <div class="queue">
+                <div class="tag">db.write</div>
+                <div class="tag">repo.push</div>
+                <div class="tag">deploy.preview</div>
+              </div>
+            </div>
+            <div>
+              <h2>Repo Signals</h2>
+              <div class="queue">
+                <div class="tag">AGENTS.md present</div>
+                <div class="tag">architecture docs linked</div>
+                <div class="tag">CI green</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" style="margin-bottom: 18px;">
+            <h2>Runtime Metrics</h2>
+            <h3>Fast feedback loops keep the agent honest</h3>
+            <div class="bars">
+              <div class="bar-row">
+                <span>Tests</span>
+                <div class="bar"><div style="width: 96%;"></div></div>
+                <strong>96%</strong>
+              </div>
+              <div class="bar-row">
+                <span>UI Checks</span>
+                <div class="bar"><div style="width: 91%;"></div></div>
+                <strong>91%</strong>
+              </div>
+              <div class="bar-row">
+                <span>Logs</span>
+                <div class="bar"><div style="width: 88%;"></div></div>
+                <strong>88%</strong>
+              </div>
+              <div class="bar-row">
+                <span>Traces</span>
+                <div class="bar"><div style="width: 93%;"></div></div>
+                <strong>93%</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Structured Logs</h2>
+            <div class="logbox">
+              <div><span class="muted">14:34:02.012</span> <span class="ok">INFO</span> turn request received</div>
+              <div><span class="muted">14:34:02.214</span> <span class="ok">INFO</span> permission check passed tool=repo.read</div>
+              <div><span class="muted">14:34:02.498</span> <span class="ok">INFO</span> verification checks running</div>
+              <div><span class="muted">14:34:02.871</span> <span class="warn">WARN</span> selector retry data-test=save-button</div>
+              <div><span class="muted">14:34:03.155</span> <span class="ok">INFO</span> checkout-smoke passed</div>
+              <div><span class="muted">14:34:03.489</span> <span class="ok">INFO</span> span exported latency_ms=742</div>
+              <div><span class="muted">14:34:03.812</span> <span class="ok">INFO</span> turn completed successfully</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
