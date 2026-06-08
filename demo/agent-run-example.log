@@ -1,0 +1,8 @@
+2026-06-05T12:41:12.018Z INFO  api       request_id=turn_014 msg="workspace update request received" workspace_id=ws_204
+2026-06-05T12:41:12.097Z INFO  validate  request_id=turn_014 msg="request schema validated" schema=environment_delete_request
+2026-06-05T12:41:12.138Z INFO  auth      request_id=turn_014 msg="role check passed" actor_role=owner
+2026-06-05T12:41:12.192Z WARN  policy    request_id=turn_014 msg="destructive action requires approval" action=environment.delete environment_id=env_staging
+2026-06-05T12:41:18.601Z INFO  approval  request_id=turn_014 msg="approval granted" approver=workspace_owner_01
+2026-06-05T12:41:18.922Z INFO  repos     request_id=turn_014 msg="environment marked for deletion" environment_id=env_staging
+2026-06-05T12:41:19.311Z INFO  tests     request_id=turn_014 msg="workspace-delete-flow verified" suite=workspace-delete-flow
+2026-06-05T12:41:19.602Z INFO  finish    request_id=turn_014 msg="turn completed successfully"

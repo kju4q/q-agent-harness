@@ -72,7 +72,10 @@ The faster an agent can observe failure, the faster it can recover.
 - [templates/AGENTS-template.md](templates/AGENTS-template.md): a copy-paste template
 - [docs/starter-checklist.md](docs/starter-checklist.md): practical harness checklist
 - [docs/repo-structure.md](docs/repo-structure.md): sample repo layout and why it matters
-- [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): starter templates for the most useful repo-local context
+- [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): example repo-local context for the `WorkspaceHub` sample app
+- [docs/approval-policy.md](docs/approval-policy.md) and [docs/architecture-boundaries.md](docs/architecture-boundaries.md): public examples of guardrails and structural boundaries
+- [examples/](examples/) and [tests/](tests/): lightweight examples that make validation, approval, and verification visible
+- [demo/](demo/): simple dashboard, log, and shell-script assets for showing feedback loops
 
 ## How to use this starter kit
 

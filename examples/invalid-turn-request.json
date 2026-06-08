@@ -1,0 +1,9 @@
+{
+  "sessionId": "",
+  "message": "",
+  "mode": "destroy",
+  "budgetUsd": "unlimited",
+  "workspaceId": "ws_204",
+  "actorRole": "member",
+  "action": "environment.delete"
+}

@@ -1,0 +1,10 @@
+{
+  "sessionId": "ws_204:env_staging:turn_014",
+  "message": "Delete the staging environment after confirmation from the workspace owner.",
+  "mode": "agent",
+  "budgetUsd": 2.5,
+  "workspaceId": "ws_204",
+  "actorRole": "owner",
+  "action": "environment.delete",
+  "environmentId": "env_staging"
+}
