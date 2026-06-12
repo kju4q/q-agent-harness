@@ -71,11 +71,12 @@ The faster an agent can observe failure, the faster it can recover.
 - [AGENTS.md](AGENTS.md): a starter instruction file for agent-facing repositories
 - [templates/AGENTS-template.md](templates/AGENTS-template.md): a copy-paste template
 - [docs/starter-checklist.md](docs/starter-checklist.md): practical harness checklist
+- [docs/task-setups.md](docs/task-setups.md): how the harness should change for debugging, research, and decisions
 - [docs/repo-structure.md](docs/repo-structure.md): sample repo layout and why it matters
 - [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): example repo-local context for the `WorkspaceHub` sample app
 - [docs/approval-policy.md](docs/approval-policy.md) and [docs/architecture-boundaries.md](docs/architecture-boundaries.md): public examples of guardrails and structural boundaries
-- [examples/](examples/) and [tests/](tests/): lightweight examples that make validation, approval, and verification visible
-- [demo/](demo/): simple dashboard, log, and shell-script assets for showing feedback loops
+- [examples/](examples/) and [tests/](tests/): lightweight examples that make validation, approval, verification, and task-specific setups visible
+- [demo/](demo/): simple dashboard, log, shell-script, and task-matrix assets for showing feedback loops and setup differences
 
 ## How to use this starter kit
 
@@ -83,3 +84,4 @@ The faster an agent can observe failure, the faster it can recover.
 2. Create a small `docs/` directory that explains your system.
 3. Add basic guardrails for validation, boundaries, and approvals.
 4. Tighten your feedback loops so the agent can detect and fix problems faster.
+5. Change the setup around the agent depending on the job instead of using one generic workflow for everything.

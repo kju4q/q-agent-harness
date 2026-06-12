@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Setup Matrix</title>
+    <style>
+      :root {
+        --bg: #f4efe6;
+        --ink: #182126;
+        --muted: #51606b;
+        --line: rgba(24, 33, 38, 0.12);
+        --card: rgba(255, 255, 255, 0.86);
+        --debug: #c35f2d;
+        --research: #2b6a6d;
+        --decision: #6b4fd2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "SF Pro Display", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(195, 95, 45, 0.12), transparent 28%),
+          radial-gradient(circle at top right, rgba(43, 106, 109, 0.14), transparent 32%),
+          linear-gradient(180deg, #f7f2ea 0%, var(--bg) 100%);
+      }
+
+      main {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 56px 28px 72px;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(24, 33, 38, 0.06);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 18px 0 12px;
+        font-size: clamp(40px, 5vw, 72px);
+        line-height: 0.96;
+        letter-spacing: -0.04em;
+        max-width: 900px;
+      }
+
+      .lead {
+        max-width: 760px;
+        font-size: 20px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 34px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: 0 18px 40px rgba(24, 33, 38, 0.06);
+        backdrop-filter: blur(14px);
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .tag {
+        display: inline-block;
+        margin-bottom: 16px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .debug .tag {
+        background: rgba(195, 95, 45, 0.14);
+        color: var(--debug);
+      }
+
+      .research .tag {
+        background: rgba(43, 106, 109, 0.14);
+        color: var(--research);
+      }
+
+      .decision .tag {
+        background: rgba(107, 79, 210, 0.14);
+        color: var(--decision);
+      }
+
+      .problem,
+      .ask {
+        margin: 16px 0;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+
+      .label {
+        margin-bottom: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      ul {
+        margin: 10px 0 0 18px;
+        padding: 0;
+        line-height: 1.5;
+      }
+
+      .footer {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .mini {
+        padding: 20px 22px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.66);
+        border: 1px solid var(--line);
+      }
+
+      .mini h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .mini p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      @media (max-width: 960px) {
+        .grid,
+        .footer {
+          grid-template-columns: 1fr;
+        }
+
+        main {
+          padding: 36px 18px 48px;
+        }
+
+        .lead {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">q-agent-harness</div>
+      <h1>You cannot use the same agent setup for every task.</h1>
+      <p class="lead">
+        Debugging needs hypotheses. Research needs sources. Decisions need criteria.
+        The model can stay the same while the structure around the work changes.
+      </p>
+
+      <section class="grid">
+        <article class="card debug">
+          <div class="tag">Debugging</div>
+          <h2>Find what is wrong</h2>
+          <div class="problem">
+            <div class="label">What fails</div>
+            <p>The agent grabs the first plausible explanation and starts changing code too early.</p>
+          </div>
+          <div class="ask">
+            <div class="label">Better setup</div>
+            <ul>
+              <li>form 3 hypotheses</li>
+              <li>check logs and tests</li>
+              <li>rule them out one by one</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="card research">
+          <div class="tag">Research</div>
+          <h2>Figure out what is true</h2>
+          <div class="problem">
+            <div class="label">What fails</div>
+            <p>The agent summarizes one source smoothly and hides disagreement or uncertainty.</p>
+          </div>
+          <div class="ask">
+            <div class="label">Better setup</div>
+            <ul>
+              <li>bring back multiple sources</li>
+              <li>compare agreements</li>
+              <li>surface disagreements clearly</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="card decision">
+          <div class="tag">Decision</div>
+          <h2>Choose between options</h2>
+          <div class="problem">
+            <div class="label">What fails</div>
+            <p>The agent optimizes for what sounds impressive instead of what fits the actual goal.</p>
+          </div>
+          <div class="ask">
+            <div class="label">Better setup</div>
+            <ul>
+              <li>define criteria up front</li>
+              <li>score tradeoffs explicitly</li>
+              <li>name the downside of the recommendation</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="footer">
+        <div class="mini">
+          <h3>Artifact to show</h3>
+          <p><code>examples/debug-hypotheses.md</code></p>
+        </div>
+        <div class="mini">
+          <h3>Artifact to show</h3>
+          <p><code>examples/research-source-compare.md</code></p>
+        </div>
+        <div class="mini">
+          <h3>Artifact to show</h3>
+          <p><code>examples/decision-rubric.md</code></p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -39,7 +39,17 @@ You do not need a complex platform on day one, but you should think about:
 - event logging
 - traceability across agent actions
 
-## 5. Good first upgrades
+## 5. Task-specific harness
+
+Do not use the same setup for every task.
+
+- For debugging, ask the agent to form competing hypotheses and check evidence before changing code.
+- For research, ask the agent to bring back sources, compare them, and surface disagreements.
+- For decisions, give the agent a rubric with explicit criteria and tradeoffs.
+
+See `docs/task-setups.md` and the example files in `examples/`.
+
+## 6. Good first upgrades
 
 If your current setup is messy, start here:
 
@@ -49,7 +59,7 @@ If your current setup is messy, start here:
 4. Add one reliable verification command.
 5. Make logs easier to understand.
 
-## 6. Anti-patterns
+## 7. Anti-patterns
 
 - One giant instruction file that tries to explain everything.
 - Important knowledge living only in chat, Slack, or someone's head.
