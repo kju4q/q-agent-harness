@@ -76,7 +76,7 @@ The faster an agent can observe failure, the faster it can recover.
 - [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): example repo-local context for the `WorkspaceHub` sample app
 - [docs/approval-policy.md](docs/approval-policy.md) and [docs/architecture-boundaries.md](docs/architecture-boundaries.md): public examples of guardrails and structural boundaries
 - [examples/](examples/) and [tests/](tests/): lightweight examples that make validation, approval, verification, and task-specific setups visible
-- [content-agent-loop/](content-agent-loop/): A real-world autonomous content creation loop (research → draft → self-critique → refine) built using loop engineering principles
+- [content-agent-loop](content-agent-loop): A real-world autonomous content creation loop (research → draft → self-critique → refine) built using loop engineering principles
 - [demo/](demo/): simple dashboard, log, shell-script, and task-matrix assets for showing feedback loops and setup differences
 
 ## How to use this starter kit
