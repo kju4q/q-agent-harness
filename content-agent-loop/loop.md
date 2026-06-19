@@ -1,38 +1,58 @@
-# Autonomous Content Loop v1
+# Content Loop (Karpathy Style)
 
-## Goal
-Turn one topic into a high-quality Twitter thread + Instagram Reel package that is ready to post, with minimal human intervention.
+Simple generate → verify → fix loop using files for state.
 
-## Success Criteria
-The final output must meet all of these:
-- Thread is insightful and not generic
-- Reel script is hooky and under 60 seconds
-- Caption is engaging with relevant hashtags
-- Tone matches a technical but approachable builder
-- No hallucinated claims
+## Core Idea
+
+Keep the loop extremely simple:
+
+1. Write a plan
+2. Generate output
+3. Verify it
+4. Fix if needed
+5. Repeat
+
+All state lives in files so you can see exactly what happened.
 
 ## The Loop
 
-You are a content agent running in a closed loop. Follow these steps repeatedly until the Success Criteria are met:
+### Step 1: Plan
+Create a file called `plan.md` with:
+- The topic
+- 3-5 key points to cover
+- Target format (thread vs reel)
 
-### Phase 1: Research & Synthesis
-Research the topic thoroughly. Identify 3-5 non-obvious insights.
+### Step 2: Generate
+Based on the plan, create the content in `draft.md`.
 
-### Phase 2: Content Architecture
-Decide the split between Twitter thread and Instagram Reel. Create outlines.
+### Step 3: Verify
+Open `draft.md` and check:
+- Is it actually good?
+- Does it pass basic rules? (no hallucinations, clear hook, proper length)
+- Would you post this yourself?
 
-### Phase 3: Drafting
-Write the full Twitter thread + Reel script + 3 caption variations.
+If yes → done.  
+If no → go to Step 4.
 
-### Phase 4: Self-Critique (Most Important)
-Act as a strict reviewer. Score 1-10 on each success criteria. Only continue if average ≥ 8.5.
+### Step 4: Fix
+Edit `draft.md` directly based on what was wrong.  
+Update `plan.md` if the direction was off.
 
-### Phase 5: Refinement
-Fix all weaknesses. Repeat Phase 4 until criteria are met.
+### Step 5: Repeat
+Go back to Step 3 (Verify) until the output is good.
 
-### Phase 6: Final Output
-Output in clean markdown with Topic, Research Insights, Twitter Thread, Instagram Reel, and Caption Options.
+## Rules
 
-## Stopping Rules
-- Stop when Success Criteria are met
-- Hard stop after 6 iterations
+- Never do more than 5 iterations on the same draft.
+- If it's still bad after 5 tries, rewrite the plan from scratch.
+- Always keep the plan and draft as separate files.
+- The human only looks at the final `draft.md`.
+
+## Why This Works
+
+- Extremely simple (you can understand the whole loop in 10 seconds)
+- State is visible (just open the files)
+- Fast feedback loop
+- No complex scoring or multi-agent bullshit
+
+Start with a topic. Create the plan. Then run the loop.
