@@ -1,0 +1,519 @@
+#!/usr/bin/env python3
+"""compact: the tier mover.
+
+Reads the episodic task log, asks the claude CLI which lessons repeat or
+generalize, and proposes promotions into hot memory (Tier 1) or procedures
+(Tier 4). Nothing is written without explicit per-proposal approval.
+
+See COMPACTION.md for the promotion rules this automates.
+"""
+
+import argparse
+import datetime
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(SCRIPT_DIR)
+DEFAULT_LOG = os.path.join(REPO_ROOT, "memory", "episodic", "task-log.md")
+PROCEDURES_DIR = os.path.join(REPO_ROOT, "memory", "procedural")
+DEFAULT_HOT_FILE = "./CLAUDE.md"
+
+VALID_TYPES = ("hot_rule", "procedure")
+
+
+def fail(message, code=1):
+    print("compact: " + message, file=sys.stderr)
+    sys.exit(code)
+
+
+def note(message):
+    print("compact: " + message)
+
+
+def rel(path):
+    try:
+        relative = os.path.relpath(path, REPO_ROOT)
+    except ValueError:
+        return path
+    if relative.startswith(".."):
+        return path
+    return relative
+
+
+# ---------------------------------------------------------------- prompt
+
+
+def build_prompt(log_text, today):
+    return f"""You are reading an episodic task log from a tiered agent memory system.
+
+Your job is to find lessons that REPEAT across entries or that GENERALIZE
+beyond the single task they came from, and propose promoting them to a
+higher memory tier.
+
+Two targets:
+
+- "hot_rule": the lesson fits in one sentence and applies to every task.
+  This tier is loaded on every request and has a 2,000 token budget, so be
+  strict. Draft the content as a single markdown list item starting with
+  "- ".
+- "procedure": the lesson needs a sequence of steps, or only applies to one
+  kind of task. Draft the content as a complete markdown procedure file in
+  exactly this shape:
+
+# Procedure: <Title>
+
+**Version:** v1.0
+**Last validated:** {today}
+
+## When to use
+
+<when to use it, and when not to>
+
+## Steps
+
+1. <step>
+2. <step>
+
+## What done looks like
+
+- <observable condition>
+
+Rules:
+
+- A lesson appearing once is noise. Prefer lessons that show up in two or
+  more entries, or that clearly apply beyond their own task.
+- Propose nothing rather than padding. An empty array is a valid and
+  common answer.
+- Do not propose more than 4 items.
+- Every proposal must trace back to real lessons in the log.
+- Do not use em dashes or double hyphens anywhere in the drafted content.
+  Use a comma, a colon, or a second sentence instead.
+- Write plainly. No hype words, no marketing language.
+
+Return ONLY a JSON array. No prose before or after. No code fences. Each
+element must have exactly this schema:
+
+{{"type": "hot_rule" | "procedure", "title": "<short title>", "content": "<the drafted rule line, or the full drafted procedure file content>", "source_lessons": ["<the log lessons this came from>"]}}
+
+The task log follows between the markers.
+
+--- BEGIN TASK LOG ---
+{log_text}
+--- END TASK LOG ---
+"""
+
+
+# ---------------------------------------------------------------- parsing
+
+
+def strip_fences(text):
+    """Return the inside of a markdown code fence if the text is fenced."""
+    match = re.search(r"```(?:json)?\s*\n(.*?)\n?```", text, re.DOTALL)
+    if match:
+        return match.group(1)
+    return None
+
+
+def first_json_array(text):
+    """Find the first balanced [...] span, ignoring brackets inside strings."""
+    start = text.find("[")
+    if start == -1:
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return None
+
+
+def parse_proposals(raw):
+    """Parse claude's output into a list of proposals, defensively.
+
+    Returns (proposals, None) on success or (None, reason) on failure.
+    """
+    if raw is None or not raw.strip():
+        return None, "claude returned no output"
+
+    candidates = [raw.strip()]
+    fenced = strip_fences(raw)
+    if fenced:
+        candidates.append(fenced.strip())
+    for candidate in list(candidates):
+        span = first_json_array(candidate)
+        if span:
+            candidates.append(span)
+
+    data = None
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(parsed, list):
+            data = parsed
+            break
+
+    if data is None:
+        return None, "could not locate a JSON array in claude's output"
+
+    proposals = []
+    for index, item in enumerate(data):
+        where = f"element {index}"
+        if not isinstance(item, dict):
+            return None, f"{where} is not an object"
+        kind = item.get("type")
+        title = item.get("title")
+        content = item.get("content")
+        sources = item.get("source_lessons", [])
+        if kind not in VALID_TYPES:
+            return None, f"{where} has type {kind!r}, expected one of {VALID_TYPES}"
+        if not isinstance(title, str) or not title.strip():
+            return None, f"{where} has a missing or empty title"
+        if not isinstance(content, str) or not content.strip():
+            return None, f"{where} has missing or empty content"
+        if not isinstance(sources, list):
+            return None, f"{where} has a non-list source_lessons"
+        proposals.append({
+            "type": kind,
+            "title": title.strip(),
+            "content": content.strip(),
+            "source_lessons": [str(s) for s in sources],
+        })
+    return proposals, None
+
+
+# ---------------------------------------------------------------- targets
+
+
+def slugify(title):
+    slug = title.lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", slug)
+    slug = slug.strip("-")
+    return slug or "procedure"
+
+
+def procedure_path(title):
+    """Slug the title, adding a -2 style suffix on collision."""
+    base = slugify(title)
+    path = os.path.join(PROCEDURES_DIR, base + ".md")
+    counter = 2
+    while os.path.exists(path):
+        path = os.path.join(PROCEDURES_DIR, f"{base}-{counter}.md")
+        counter += 1
+    return path
+
+
+def hot_rule_text(content):
+    """Normalize a drafted rule into the exact line that will be appended."""
+    line = " ".join(content.split())
+    if not line.startswith("- "):
+        line = "- " + line.lstrip("-* ").strip()
+    return line
+
+
+def resolve_targets(proposals, hot_file):
+    """Attach the exact target path and final text to each proposal.
+
+    Done before any preview so the preview shows exactly what gets written.
+    Procedure paths are reserved in order so two proposals cannot collide.
+    """
+    reserved = set()
+    for proposal in proposals:
+        if proposal["type"] == "hot_rule":
+            proposal["target"] = hot_file
+            proposal["final_text"] = hot_rule_text(proposal["content"])
+        else:
+            path = procedure_path(proposal["title"])
+            while path in reserved:
+                base, _ = os.path.splitext(path)
+                match = re.match(r"^(.*?)-(\d+)$", base)
+                if match:
+                    path = f"{match.group(1)}-{int(match.group(2)) + 1}.md"
+                else:
+                    path = base + "-2.md"
+            reserved.add(path)
+            proposal["target"] = path
+            proposal["final_text"] = proposal["content"].rstrip() + "\n"
+    return proposals
+
+
+# ---------------------------------------------------------------- display
+
+
+def show(proposal, index, total):
+    kind = "hot rule (Tier 1)" if proposal["type"] == "hot_rule" else "procedure (Tier 4)"
+    action = "append to" if proposal["type"] == "hot_rule" else "create"
+    print("=" * 72)
+    print(f"Proposal {index} of {total}")
+    print(f"  type:   {kind}")
+    print(f"  title:  {proposal['title']}")
+    print(f"  target: {rel(proposal['target'])}  ({action})")
+    if proposal["source_lessons"]:
+        print("  from:")
+        for lesson in proposal["source_lessons"]:
+            print(f"    - {lesson}")
+    print("-" * 72)
+    print(proposal["final_text"].rstrip("\n"))
+    print("=" * 72)
+
+
+def ask(prompt):
+    """Prompt for y/n. EOF or interrupt counts as a rejection."""
+    while True:
+        try:
+            answer = input(prompt).strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return False
+        if answer in ("y", "yes"):
+            return True
+        if answer in ("n", "no", ""):
+            return False
+        print("  Please answer y or n.")
+
+
+# ---------------------------------------------------------------- writing
+
+
+def write_hot_rule(proposal):
+    path = proposal["target"]
+    if not os.path.isfile(path):
+        return False, f"hot memory file not found: {path}. Run 'scripts/hotmem init {path}' first."
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            existing = handle.read()
+        prefix = "" if existing.endswith("\n") or not existing else "\n"
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(prefix + proposal["final_text"] + "\n")
+    except OSError as error:
+        return False, f"could not write {path}: {error}"
+    return True, None
+
+
+def write_procedure(proposal):
+    path = proposal["target"]
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "x", encoding="utf-8") as handle:
+            handle.write(proposal["final_text"])
+    except FileExistsError:
+        return False, f"{path} appeared while compact was running, skipped"
+    except OSError as error:
+        return False, f"could not write {path}: {error}"
+    return True, None
+
+
+# ---------------------------------------------------------------- claude
+
+
+def require_claude():
+    if shutil.which("claude") is None:
+        fail(
+            "the claude CLI is not installed or not on your PATH.\n"
+            "compact: the judgment step needs it. Install it from https://claude.com/claude-code."
+        )
+
+
+def run_claude(prompt):
+    require_claude()
+    try:
+        result = subprocess.run(
+            ["claude", "-p", prompt],
+            capture_output=True,
+            text=True,
+            # Do not let the CLI consume stdin. The approval answers live
+            # there, and an inherited stdin swallows them.
+            stdin=subprocess.DEVNULL,
+        )
+    except OSError as error:
+        fail(f"could not run the claude CLI: {error}")
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip()
+        fail(f"the claude CLI exited with status {result.returncode}\n{stderr}")
+    return result.stdout
+
+
+# ---------------------------------------------------------------- main
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog="compact",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Promote repeating lessons out of the episodic task log into higher\n"
+            "memory tiers. Promotion means a lesson you keep relearning stops\n"
+            "being a log entry and becomes a rule the agent always loads, or a\n"
+            "procedure it can follow."
+        ),
+        epilog="""\
+WHAT IT DOES
+
+  Reads the task log, asks the claude CLI which lessons repeat or generalize,
+  and proposes each one as either a hot-memory rule (Tier 1, one line) or a
+  procedure (Tier 4, a new file). You approve or reject each proposal one at
+  a time. Nothing is written without a yes.
+
+EXAMPLES
+
+  # The normal flow, against the default log
+  compact
+
+  # See what it would propose, without the approval flow
+  compact --dry-run
+
+  # Against a different log, appending rules to a different hot memory file
+  compact --log memory/episodic/example-task-log.md --hot-file ./CLAUDE.md
+
+TARGETS
+
+  hot rules   appended to the hot memory file (default ./CLAUDE.md)
+  procedures  created in memory/procedural/, filename slugged from the title
+
+REQUIRES
+
+  The claude CLI on your PATH. See COMPACTION.md for the promotion rules.
+""",
+    )
+    parser.add_argument(
+        "--log",
+        default=DEFAULT_LOG,
+        help="path to the episodic task log (default: memory/episodic/task-log.md)",
+    )
+    parser.add_argument(
+        "--hot-file",
+        default=DEFAULT_HOT_FILE,
+        help="hot memory file that approved rules are appended to (default: ./CLAUDE.md)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="show proposals and exit, without the approval flow",
+    )
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
+
+    log_path = os.path.abspath(args.log)
+    if not os.path.exists(log_path):
+        note(f"no task log at {rel(log_path)}.")
+        note("Nothing to compact yet. Log some tasks with 'scripts/log-task' first.")
+        return 0
+    if not os.path.isfile(log_path):
+        fail(f"{rel(log_path)} is not a file")
+
+    try:
+        with open(log_path, "r", encoding="utf-8") as handle:
+            log_text = handle.read()
+    except OSError as error:
+        fail(f"could not read {rel(log_path)}: {error}")
+
+    if not log_text.strip():
+        note(f"{rel(log_path)} is empty.")
+        note("Nothing to compact yet. Log some tasks with 'scripts/log-task' first.")
+        return 0
+
+    if "task:" not in log_text:
+        note(f"{rel(log_path)} has no entries yet.")
+        note("Nothing to compact. Log some tasks with 'scripts/log-task' first.")
+        return 0
+
+    require_claude()
+
+    today = datetime.date.today().isoformat()
+    note(f"reading {rel(log_path)}")
+    note("asking claude which lessons repeat or generalize")
+    print()
+    sys.stdout.flush()
+
+    raw = run_claude(build_prompt(log_text, today))
+    proposals, reason = parse_proposals(raw)
+
+    if proposals is None:
+        print("compact: could not parse claude's response.", file=sys.stderr)
+        print(f"compact: {reason}", file=sys.stderr)
+        print("compact: nothing was written. Raw output follows.", file=sys.stderr)
+        print("-" * 72, file=sys.stderr)
+        print(raw.rstrip() if raw else "(no output)", file=sys.stderr)
+        print("-" * 72, file=sys.stderr)
+        return 1
+
+    if not proposals:
+        note("no repeating lessons found. Nothing to promote.")
+        note("This is a normal result. Keep logging tasks and run compact again later.")
+        return 0
+
+    hot_file = os.path.abspath(args.hot_file)
+    proposals = resolve_targets(proposals, hot_file)
+
+    note(f"{len(proposals)} proposal(s)")
+    print()
+
+    if args.dry_run:
+        for index, proposal in enumerate(proposals, start=1):
+            show(proposal, index, len(proposals))
+            print()
+        note("dry run. Nothing was written.")
+        note("Run without --dry-run to approve or reject each proposal.")
+        return 0
+
+    approved = []
+    rejected = []
+    failed = []
+
+    for index, proposal in enumerate(proposals, start=1):
+        show(proposal, index, len(proposals))
+        if not ask("Approve this promotion? [y/N] "):
+            rejected.append(proposal)
+            print("  rejected, skipped\n")
+            continue
+        if proposal["type"] == "hot_rule":
+            ok, error = write_hot_rule(proposal)
+        else:
+            ok, error = write_procedure(proposal)
+        if ok:
+            approved.append(proposal)
+            print(f"  written to {rel(proposal['target'])}\n")
+        else:
+            failed.append((proposal, error))
+            print(f"  FAILED: {error}\n")
+
+    print("-" * 72)
+    note(f"approved {len(approved)}, rejected {len(rejected)}, failed {len(failed)}")
+    for proposal in approved:
+        print(f"  + {rel(proposal['target'])}  ({proposal['title']})")
+    for proposal, error in failed:
+        print(f"  ! {proposal['title']}: {error}")
+    if not approved and not failed:
+        note("nothing was written.")
+    elif approved:
+        note("review the changes before committing them.")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

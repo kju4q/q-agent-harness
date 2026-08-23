@@ -146,13 +146,37 @@ That is the difference between an agent that has been running for six months
 and one that has been running for six months and learned something. Without
 compaction those are the same agent.
 
-## Coming in a later phase
+## The compact script
 
-A compact script in `scripts/` will automate the promotion step: read the
-task log, cluster lessons by similarity, and surface the repeating ones as
-candidates with a suggested target tier.
+`scripts/compact` automates the promotion step. It does the part that is
+genuinely mechanical, which is noticing that three entries written months
+apart are saying the same thing.
 
-It will propose, not promote. The judgment about whether a repetition is
-signal or an accident of your recent work stays with you. The script only
-removes the part that is genuinely mechanical, which is noticing that three
-entries months apart are saying the same thing.
+```
+scripts/compact --dry-run                     # see the proposals, write nothing
+scripts/compact                               # approve or reject each one
+scripts/compact --hot-file ./CLAUDE.md        # pick the hot memory target
+```
+
+It reads `memory/episodic/task-log.md`, sends it to the claude CLI, and
+comes back with proposals. Each one is either a hot-memory rule, drafted as
+a single line, or a procedure, drafted as a complete file with a version
+header and a validation date.
+
+Then it shows you each proposal with its exact target file and exact
+content, and asks. One at a time, never all at once. Approved hot rules are
+appended to the hot memory file. Approved procedures are written to
+`memory/procedural/` under a filename slugged from the title. Rejected
+proposals are dropped and nothing is written.
+
+The judgment stays with you. The script proposes, it does not promote. It
+can see repetition, which is the tedious part, but it cannot tell the
+difference between a lesson that repeated because it matters and one that
+repeated because you happened to work on the same subsystem three weeks
+running. That call is still yours, which is why every write needs a yes.
+
+An empty result is a normal outcome. Most months there is nothing to
+promote, and the script says so and exits.
+
+Requires the claude CLI on your PATH. Run `scripts/compact --help` for the
+full usage.

@@ -29,5 +29,15 @@ jobs:
         with:
           scandir: ./demo
 
+      # scripts/compact is Python and has a python3 shebang, so shellcheck
+      # skips it. It is covered by the syntax check below instead.
+      - name: Shellcheck scripts
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: ./scripts
+
       - name: Node syntax check (demo/schema-validation.js)
         run: node --check demo/schema-validation.js
+
+      - name: Python syntax check (scripts/compact)
+        run: python3 -m py_compile scripts/compact
