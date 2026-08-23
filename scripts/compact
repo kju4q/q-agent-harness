@@ -225,6 +225,76 @@ def procedure_path(title):
     return path
 
 
+# Headings a rule can land under, most preferred first. A rule reads as a
+# prohibition or as a standing instruction, and each has its own home.
+BAN_HEADINGS = ("banned", "never", "prohibited", "forbidden", "do not")
+RULE_HEADINGS = ("always", "rules", "required", "non-negotiables")
+
+BAN_PATTERN = re.compile(r"^-\s*(never|do not|don't|dont|avoid|no |under no)", re.IGNORECASE)
+
+
+def split_sections(lines):
+    """Return [{heading, name, body_start, body_end}] for each '## ' section."""
+    sections = []
+    for index, line in enumerate(lines):
+        if line.startswith("## "):
+            if sections:
+                sections[-1]["body_end"] = index
+            sections.append({
+                "heading": line.rstrip(),
+                "name": line[3:].strip().lower().rstrip(":"),
+                "body_start": index + 1,
+                "body_end": len(lines),
+            })
+    return sections
+
+
+def last_bullet(lines, start, end):
+    """Index of the last markdown list item in [start, end), or None."""
+    found = None
+    for index in range(start, min(end, len(lines))):
+        if lines[index].lstrip().startswith(("- ", "* ")):
+            found = index
+    return found
+
+
+def placement(text, rule_line):
+    """Decide where a rule goes. Returns (line_index, heading_label).
+
+    line_index is the line the rule is inserted before. The rule never lands
+    after a trailing footer, because every candidate is anchored to a rules
+    section or to the last list item in the file.
+    """
+    lines = text.splitlines()
+    sections = split_sections(lines)
+    preferred = BAN_HEADINGS if BAN_PATTERN.match(rule_line) else RULE_HEADINGS
+
+    # 1. A section whose heading matches the kind of rule this is.
+    for want in preferred:
+        for section in sections:
+            if section["name"] == want or section["name"].startswith(want):
+                anchor = last_bullet(lines, section["body_start"], section["body_end"])
+                if anchor is not None:
+                    return anchor + 1, section["heading"]
+                return section["body_start"], section["heading"]
+
+    # 2. Otherwise the last section that actually holds rules.
+    for section in reversed(sections):
+        anchor = last_bullet(lines, section["body_start"], section["body_end"])
+        if anchor is not None:
+            return anchor + 1, section["heading"]
+
+    # 3. No sections with rules at all. Sit after the last list item anywhere,
+    #    and failing that at the end, but never past a trailing separator.
+    anchor = last_bullet(lines, 0, len(lines))
+    if anchor is not None:
+        return anchor + 1, "end of the last list"
+    for index in range(len(lines) - 1, -1, -1):
+        if lines[index].strip() == "---":
+            return index, "above the footer"
+    return len(lines), "end of file"
+
+
 def hot_rule_text(content):
     """Normalize a drafted rule into the exact line that will be appended."""
     line = " ".join(content.split())
@@ -244,6 +314,12 @@ def resolve_targets(proposals, hot_file):
         if proposal["type"] == "hot_rule":
             proposal["target"] = hot_file
             proposal["final_text"] = hot_rule_text(proposal["content"])
+            try:
+                with open(hot_file, "r", encoding="utf-8") as handle:
+                    _, label = placement(handle.read(), proposal["final_text"])
+                proposal["placement"] = label
+            except OSError:
+                proposal["placement"] = None
         else:
             path = procedure_path(proposal["title"])
             while path in reserved:
@@ -264,12 +340,18 @@ def resolve_targets(proposals, hot_file):
 
 def show(proposal, index, total):
     kind = "hot rule (Tier 1)" if proposal["type"] == "hot_rule" else "procedure (Tier 4)"
-    action = "append to" if proposal["type"] == "hot_rule" else "create"
+    action = "insert into" if proposal["type"] == "hot_rule" else "create"
     print("=" * 72)
     print(f"Proposal {index} of {total}")
     print(f"  type:   {kind}")
     print(f"  title:  {proposal['title']}")
     print(f"  target: {rel(proposal['target'])}  ({action})")
+    if proposal["type"] == "hot_rule":
+        label = proposal.get("placement")
+        if label:
+            print(f"  under:  {label}")
+        else:
+            print("  under:  file not found, this write will fail")
     if proposal["source_lessons"]:
         print("  from:")
         for lesson in proposal["source_lessons"]:
@@ -304,9 +386,17 @@ def write_hot_rule(proposal):
     try:
         with open(path, "r", encoding="utf-8") as handle:
             existing = handle.read()
-        prefix = "" if existing.endswith("\n") or not existing else "\n"
-        with open(path, "a", encoding="utf-8") as handle:
-            handle.write(prefix + proposal["final_text"] + "\n")
+        # Recomputed here rather than reused from the preview, so a rule
+        # approved earlier in this same run cannot leave a stale index.
+        index, label = placement(existing, proposal["final_text"])
+        lines = existing.splitlines()
+        lines.insert(index, proposal["final_text"])
+        updated = "\n".join(lines)
+        if existing.endswith("\n"):
+            updated += "\n"
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(updated)
+        proposal["placement"] = label
     except OSError as error:
         return False, f"could not write {path}: {error}"
     return True, None
@@ -389,7 +479,11 @@ EXAMPLES
 
 TARGETS
 
-  hot rules   appended to the hot memory file (default ./CLAUDE.md)
+  hot rules   inserted into the hot memory file (default ./CLAUDE.md) under
+              the section heading that matches the rule: a prohibition goes
+              under Banned or Never, a standing instruction under Always. If
+              no heading matches, it joins the last section that holds rules.
+              A rule never lands after the file's footer.
   procedures  created in memory/procedural/, filename slugged from the title
 
 REQUIRES
@@ -505,7 +599,10 @@ def main():
     print("-" * 72)
     note(f"approved {len(approved)}, rejected {len(rejected)}, failed {len(failed)}")
     for proposal in approved:
-        print(f"  + {rel(proposal['target'])}  ({proposal['title']})")
+        where = ""
+        if proposal["type"] == "hot_rule" and proposal.get("placement"):
+            where = f"  under {proposal['placement']}"
+        print(f"  + {rel(proposal['target'])}  ({proposal['title']}){where}")
     for proposal, error in failed:
         print(f"  ! {proposal['title']}: {error}")
     if not approved and not failed:

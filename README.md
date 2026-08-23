@@ -123,7 +123,7 @@ same architectural decision twice.
 
 - [`scripts/log-task`](scripts/log-task): appends an entry to `memory/episodic/task-log.md`, stamping the date for you. Pass `--task`, `--approach`, `--result`, and `--lesson`, or run it bare and answer the prompts. Creates the log from the template on first use.
 - [`scripts/hotmem`](scripts/hotmem): `init` scaffolds a hot memory file from the template, `check` estimates its token count against the 2,000 budget, and `clean` asks the claude CLI to propose removals without touching the file.
-- [`scripts/compact`](scripts/compact): the tier mover. Reads the task log, finds lessons that repeat, and proposes each one as a hot-memory rule or a new procedure. You approve or reject each proposal before anything is written.
+- [`scripts/compact`](scripts/compact): the tier mover. Reads the task log, finds lessons that repeat, and proposes each one as a hot-memory rule or a new procedure. Approved rules are inserted under the matching section heading, approved procedures become new files. You approve or reject each proposal before anything is written.
 
 ```
 scripts/log-task --task "..." --approach "..." --result "..." --lesson "..."

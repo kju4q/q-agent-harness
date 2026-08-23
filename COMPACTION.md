@@ -164,10 +164,15 @@ a single line, or a procedure, drafted as a complete file with a version
 header and a validation date.
 
 Then it shows you each proposal with its exact target file and exact
-content, and asks. One at a time, never all at once. Approved hot rules are
-appended to the hot memory file. Approved procedures are written to
-`memory/procedural/` under a filename slugged from the title. Rejected
-proposals are dropped and nothing is written.
+content, and asks. One at a time, never all at once.
+
+An approved hot rule is inserted under the section heading that matches it.
+A prohibition joins Banned or Never, a standing instruction joins Always,
+and anything without a matching heading joins the last section that holds
+rules. It never lands after the file's footer. The preview names the section
+before you approve. An approved procedure is written to `memory/procedural/`
+under a filename slugged from the title. Rejected proposals are dropped and
+nothing is written.
 
 The judgment stays with you. The script proposes, it does not promote. It
 can see repetition, which is the tedious part, but it cannot tell the
