@@ -117,6 +117,15 @@ format in
 Semantic memory can wait. Write it the first time you have to explain the
 same architectural decision twice.
 
+## Scripts
+
+[`scripts/`](scripts/)
+
+- [`scripts/log-task`](scripts/log-task): appends an entry to `memory/episodic/task-log.md`, stamping the date for you. Pass `--task`, `--approach`, `--result`, and `--lesson`, or run it bare and answer the prompts. Creates the log from the template on first use.
+- [`scripts/hotmem`](scripts/hotmem): `init` scaffolds a hot memory file from the template, `check` estimates its token count against the 2,000 budget, and `clean` asks the claude CLI to propose removals without touching the file.
+
+Run either with `--help` for usage.
+
 ## Also in this repo
 
 The harness material this repo started from. Memory is one part of a harness;

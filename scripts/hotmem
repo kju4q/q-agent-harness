@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+#
+# hotmem: manage a Tier 1 hot memory file.
+#
+# Hot memory is the only tier loaded on every request, so it is the only one
+# with a size budget. See memory/hot/MAINTENANCE.md.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEMPLATE="$REPO_ROOT/memory/hot/HOT-MEMORY-template.md"
+MAINTENANCE="$REPO_ROOT/memory/hot/MAINTENANCE.md"
+DEFAULT_TARGET="./CLAUDE.md"
+BUDGET=2000
+
+usage() {
+  cat <<'HELPDOC'
+hotmem: manage a Tier 1 hot memory file
+
+USAGE
+  hotmem init  [path]    Scaffold a hot memory file from the template.
+  hotmem check [path]    Report estimated token count against the budget.
+  hotmem clean [path]    Ask the claude CLI to propose removals. Read only.
+  hotmem --help
+
+  [path] defaults to ./CLAUDE.md for every subcommand.
+
+INIT
+  Copies memory/hot/HOT-MEMORY-template.md to the target path. Refuses to
+  overwrite an existing file.
+
+    hotmem init                     # writes ./CLAUDE.md
+    hotmem init docs/CLAUDE.md      # writes docs/CLAUDE.md
+
+CHECK
+  Reports an estimated token count against the 2,000 token budget.
+
+  Estimation method: character count divided by 4, which is the usual
+  rough ratio for English prose in Claude and GPT tokenizers. A word-based
+  estimate (words times 1.33) is printed alongside it as a cross-check.
+  Both are estimates. They are accurate enough to tell you whether you are
+  near the budget, and not accurate enough to argue about a 5 percent
+  overage. Exits 0 when under budget, 1 when over.
+
+    hotmem check
+    hotmem check memory/hot/example-hot-memory.md
+
+CLEAN
+  Sends the file to the claude CLI with the cleanup prompt from
+  memory/hot/MAINTENANCE.md and prints the proposed removals with reasons.
+
+  This never modifies the file. It proposes only. Requires the claude CLI
+  to be installed and on your PATH.
+
+    hotmem clean
+    hotmem clean memory/hot/example-hot-memory.md
+HELPDOC
+}
+
+die() {
+  echo "hotmem: $*" >&2
+  exit 1
+}
+
+# Pull the cleanup prompt out of MAINTENANCE.md so there is one source of
+# truth. Falls back to the literal if the heading is ever renamed.
+cleanup_prompt() {
+  local extracted=""
+  if [ -f "$MAINTENANCE" ]; then
+    extracted="$(awk '
+      /^### Cleanup prompt$/ { found = 1; next }
+      found && /^> / { sub(/^> /, ""); printf "%s ", $0; next }
+      found && collected { exit }
+      found && /^>/ { collected = 1 }
+    ' "$MAINTENANCE" | sed -E 's/ +$//')"
+  fi
+  if [ -n "$extracted" ]; then
+    printf '%s' "$extracted"
+  else
+    printf '%s' "Review my hot memory file. Flag anything stale, redundant, or derivable from the codebase itself, and propose removals with reasons."
+  fi
+}
+
+cmd_init() {
+  local target="${1:-$DEFAULT_TARGET}"
+  [ -f "$TEMPLATE" ] || die "template not found at $TEMPLATE"
+  [ -e "$target" ] && die "$target already exists. Refusing to overwrite."
+  local dir
+  dir="$(dirname "$target")"
+  [ -d "$dir" ] || die "directory does not exist: $dir"
+  cp "$TEMPLATE" "$target"
+  echo "hotmem: created $target from template"
+  echo "hotmem: fill in the Always, Never, and Commands sections, then run 'hotmem check $target'"
+}
+
+cmd_check() {
+  local target="${1:-$DEFAULT_TARGET}"
+  [ -f "$target" ] || die "file not found: $target. Run 'hotmem init $target' first."
+
+  local chars words char_est word_est
+  chars=$(wc -c < "$target" | tr -d ' ')
+  words=$(wc -w < "$target" | tr -d ' ')
+  char_est=$(( chars / 4 ))
+  word_est=$(( words * 133 / 100 ))
+
+  echo "file:     $target"
+  echo "chars:    $chars"
+  echo "words:    $words"
+  echo "estimate: ~$char_est tokens (chars/4), cross-check ~$word_est tokens (words x 1.33)"
+  echo "budget:   $BUDGET tokens"
+  echo
+
+  if [ "$char_est" -le "$BUDGET" ]; then
+    echo "UNDER budget by ~$(( BUDGET - char_est )) tokens. Nothing to do."
+    return 0
+  fi
+
+  echo "OVER budget by ~$(( char_est - BUDGET )) tokens."
+  echo "Cut in this order: derivable first, then task-specific, then the oldest"
+  echo "rule that has not prevented a real mistake. See memory/hot/MAINTENANCE.md."
+  echo "Run 'hotmem clean $target' for specific proposals."
+  return 1
+}
+
+cmd_clean() {
+  local target="${1:-$DEFAULT_TARGET}"
+  [ -f "$target" ] || die "file not found: $target. Run 'hotmem init $target' first."
+
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "hotmem: the claude CLI is not installed or not on your PATH." >&2
+    echo "hotmem: 'clean' needs it to generate proposals. Install it from" >&2
+    echo "hotmem: https://claude.com/claude-code, or run the prompt below by hand:" >&2
+    echo >&2
+    echo "  $(cleanup_prompt)" >&2
+    exit 1
+  fi
+
+  local prompt
+  prompt="$(cleanup_prompt)
+
+The file is $target. Its full contents follow between the markers.
+
+--- BEGIN HOT MEMORY ---
+$(cat "$target")
+--- END HOT MEMORY ---
+
+Propose removals only. Do not rewrite the file and do not output a corrected
+version. For each rule you flag, give the rule, the category (stale,
+redundant, derivable, too specific, or unenforceable), and one sentence of
+reasoning. If a rule should move to another tier rather than be deleted, say
+which tier. If nothing should be removed, say so."
+
+  echo "hotmem: asking claude to review $target"
+  echo "hotmem: this is read only, the file will not be modified"
+  echo
+  claude -p "$prompt"
+  echo
+  echo "hotmem: proposals only. $target was not modified."
+}
+
+main() {
+  [ $# -ge 1 ] || { usage; exit 1; }
+  case "$1" in
+    init)      shift; cmd_init "$@" ;;
+    check)     shift; cmd_check "$@" ;;
+    clean)     shift; cmd_clean "$@" ;;
+    -h|--help) usage; exit 0 ;;
+    *)         echo "hotmem: unknown subcommand '$1'" >&2; echo >&2; usage >&2; exit 1 ;;
+  esac
+}
+
+main "$@"

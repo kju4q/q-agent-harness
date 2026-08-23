@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+#
+# log-task: append an entry to the episodic task log (Tier 2 memory).
+#
+# See COMPACTION.md for how episodic lessons get promoted to procedures
+# and hot-memory rules.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+LOG_FILE="$REPO_ROOT/memory/episodic/task-log.md"
+TEMPLATE="$REPO_ROOT/memory/episodic/TASK-LOG-template.md"
+
+usage() {
+  cat <<'HELPDOC'
+log-task: append an entry to memory/episodic/task-log.md
+
+The date is generated automatically as YYYY-MM-DD. You are never asked for it.
+
+USAGE
+  log-task [options]
+
+OPTIONS
+  --task TEXT        What you set out to do, one line.
+  --approach TEXT    What you actually did, including anything you abandoned.
+  --result TEXT      What happened, including attempt count.
+  --lesson TEXT      What you would tell someone starting the same task.
+                     Pass an empty string if the task taught you nothing.
+  -h, --help         Show this help.
+
+MODES
+  Any field not passed as a flag is prompted for interactively.
+  Pass no flags at all to be prompted for everything.
+
+EXAMPLES
+  # Fully non-interactive
+  log-task \
+    --task "Fix the login timeout bug" \
+    --approach "Added retry logic with exponential backoff" \
+    --result "Worked after the third attempt" \
+    --lesson "Test timeout scenarios with simulated network delays"
+
+  # Interactive, prompts for all four fields
+  log-task
+
+  # Partial, prompts only for approach and result
+  log-task --task "Speed up the invoice export" --lesson "Profile before optimizing"
+
+  # A task that taught nothing. Most of them do.
+  log-task --task "Bump the linter" --approach "Version bump" \
+           --result "Clean" --lesson ""
+
+NOTES
+  The log file is created from memory/episodic/TASK-LOG-template.md on first
+  use. Entries are appended in chronological order, oldest first.
+HELPDOC
+}
+
+die() {
+  echo "log-task: $*" >&2
+  exit 1
+}
+
+# Collapse newlines and tabs so one entry stays one line per field.
+oneline() {
+  printf '%s' "$1" | tr '\n\t' '  ' | sed -E 's/  +/ /g; s/^ +//; s/ +$//'
+}
+
+prompt_for() {
+  local label="$1" value=""
+  printf '%s: ' "$label" >&2
+  IFS= read -r value || die "input ended before '$label' was answered"
+  printf '%s' "$value"
+}
+
+task=""; approach=""; result=""; lesson=""
+have_task=0; have_approach=0; have_result=0; have_lesson=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --task)     [ $# -ge 2 ] || die "--task needs a value";     task="$2";     have_task=1;     shift 2 ;;
+    --approach) [ $# -ge 2 ] || die "--approach needs a value"; approach="$2"; have_approach=1; shift 2 ;;
+    --result)   [ $# -ge 2 ] || die "--result needs a value";   result="$2";   have_result=1;   shift 2 ;;
+    --lesson)   [ $# -ge 2 ] || die "--lesson needs a value";   lesson="$2";   have_lesson=1;   shift 2 ;;
+    -h|--help)  usage; exit 0 ;;
+    *)          die "unknown option '$1'. Run 'log-task --help'." ;;
+  esac
+done
+
+[ "$have_task" -eq 1 ]     || task="$(prompt_for 'task')"
+[ "$have_approach" -eq 1 ] || approach="$(prompt_for 'approach')"
+[ "$have_result" -eq 1 ]   || result="$(prompt_for 'result')"
+[ "$have_lesson" -eq 1 ]   || lesson="$(prompt_for 'lesson (blank if none)')"
+
+task="$(oneline "$task")"
+approach="$(oneline "$approach")"
+result="$(oneline "$result")"
+lesson="$(oneline "$lesson")"
+
+[ -n "$task" ] || die "task cannot be empty"
+
+# Create the log from the template on first use, dropping the template's
+# empty entry stubs so the new file starts clean.
+if [ ! -f "$LOG_FILE" ]; then
+  [ -f "$TEMPLATE" ] || die "no log file and no template at $TEMPLATE"
+  mkdir -p "$(dirname "$LOG_FILE")"
+  awk '
+    /^## Entries$/ { print; print ""; print "Oldest first. New entries are appended at the end."; exit }
+    { print }
+  ' "$TEMPLATE" > "$LOG_FILE"
+  echo "log-task: created $LOG_FILE from template" >&2
+fi
+
+[ -w "$LOG_FILE" ] || die "cannot write to $LOG_FILE"
+
+{
+  printf '\n```\n'
+  printf 'date: %s\n' "$(date +%Y-%m-%d)"
+  printf 'task: %s\n' "$task"
+  printf 'approach: %s\n' "$approach"
+  printf 'result: %s\n' "$result"
+  printf 'lesson: %s\n' "$lesson"
+  printf '```\n'
+} >> "$LOG_FILE"
+
+echo "log-task: appended entry to ${LOG_FILE#"$REPO_ROOT"/}"
