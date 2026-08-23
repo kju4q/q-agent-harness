@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Test and build output
+.vite/
+coverage/
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editor and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+!demo/agent-run-example.log
