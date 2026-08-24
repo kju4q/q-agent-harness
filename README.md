@@ -1,6 +1,74 @@
 # q-agent-harness
 
-Agent memory in four tiers.
+Starter kit for building an agent harness that helps AI agents write, test, fix, and ship software more reliably.
+
+This repo is built around three ideas:
+
+1. A map
+2. Guardrails
+3. Feedback loops
+
+If an agent cannot find the right context, it guesses.
+If an agent has no boundaries, it makes risky moves.
+If an agent cannot see what broke, it cannot improve its own work.
+
+## What is harness engineering?
+
+Harness engineering is the work of building the environment around an AI agent so it can do useful software work on purpose.
+
+That environment usually includes:
+
+- repo docs and architecture notes
+- agent instructions
+- tool permissions and approval points
+- coding and schema boundaries
+- tests and UI validation
+- logs, metrics, and traces
+
+The goal is not to write the perfect prompt. The goal is to make good behavior easier for the agent than bad behavior.
+
+## The 3-part framework
+
+### 1. Map
+
+Give the agent a clear model of the system:
+
+- what the product does
+- how the repo is organized
+- where business rules live
+- how modules are allowed to depend on each other
+- where to find important scripts, tests, and docs
+
+See [docs/repo-structure.md](docs/repo-structure.md).
+
+### 2. Guardrails
+
+Make risky behavior harder:
+
+- validate schemas at boundaries
+- enforce linting and type checks
+- document approved tools and commands
+- require human approval for destructive actions
+- keep architecture and dependency directions explicit
+
+See [docs/starter-checklist.md](docs/starter-checklist.md).
+
+### 3. Feedback loops
+
+Let the agent see whether its work actually worked:
+
+- unit and integration tests
+- UI checks
+- logs
+- metrics
+- traces
+- review loops
+
+The faster an agent can observe failure, the faster it can recover.
+
+## Memory
+
+The newest part of this kit: memory. A harness that remembers gets better over time.
 
 An agent with one big instruction file has one speed. It reads the same
 context on every request, learns nothing between tasks, and performs the
@@ -26,8 +94,6 @@ between them, which is what makes the agent get better over time.
         episodic ──► procedural ──► hot
              lessons become steps become rules
 ```
-
-## The four tiers
 
 ### Tier 1: Hot
 
@@ -77,7 +143,7 @@ implementation.
 If you write Claude Code skills, you are already writing this tier. A skill
 is a procedure loaded on demand when the task matches.
 
-## Compaction
+### Compaction
 
 [`COMPACTION.md`](COMPACTION.md)
 
@@ -91,33 +157,7 @@ thirty minutes.
 Without this step you have four folders that only grow, and an agent that
 accumulates instead of improving.
 
-## Quickstart
-
-Three moves, spread out. Do not try to build all four tiers in one sitting.
-
-**Today: start with hot memory.** Copy
-[`memory/hot/HOT-MEMORY-template.md`](memory/hot/HOT-MEMORY-template.md)
-to your repo as `CLAUDE.md`. Fill in the always, never, and commands
-sections with what you already know. Ten rules is plenty. See
-[`example-hot-memory.md`](memory/hot/example-hot-memory.md) for a filled
-version.
-
-**This week: add the task log.** Copy
-[`TASK-LOG-template.md`](memory/episodic/TASK-LOG-template.md) and write one
-entry per task as you finish it. Four fields, two minutes. Most entries will
-have a blank lesson, which is fine. See
-[`example-task-log.md`](memory/episodic/example-task-log.md).
-
-**This month: promote your first procedure.** Once the log has ten or so
-entries, run the promotion prompt from [`COMPACTION.md`](COMPACTION.md).
-Find one lesson that has repeated three times and write it up using the
-format in
-[`PROCEDURES-README.md`](memory/procedural/PROCEDURES-README.md).
-
-Semantic memory can wait. Write it the first time you have to explain the
-same architectural decision twice.
-
-## Scripts
+### Scripts
 
 [`scripts/`](scripts/)
 
@@ -134,17 +174,52 @@ scripts/compact --dry-run
 Run any of them with `--help` for usage. `hotmem clean` and `compact` need
 the claude CLI on your PATH.
 
-## Also in this repo
+## How to use this starter kit
 
-The harness material this repo started from. Memory is one part of a harness;
-these cover the rest.
+Build the harness first. Then give it memory.
 
-- [AGENTS.md](AGENTS.md) and [templates/AGENTS-template.md](templates/AGENTS-template.md): a starter instruction file and a copy-paste template
-- [docs/starter-checklist.md](docs/starter-checklist.md): a practical harness checklist
-- [docs/task-setups.md](docs/task-setups.md): how the setup should change for debugging, research, and decisions
+1. Copy the `AGENTS.md` template into your repo.
+2. Create a small `docs/` directory that explains your system.
+3. Add basic guardrails for validation, boundaries, and approvals.
+4. Tighten your feedback loops so the agent can detect and fix problems faster.
+5. Change the setup around the agent depending on the job instead of using one generic workflow for everything.
+
+### Then add memory
+
+Three more moves, spread out. Do not try to build all four tiers in one sitting.
+
+6. **Today: start with hot memory.** Copy
+   [`memory/hot/HOT-MEMORY-template.md`](memory/hot/HOT-MEMORY-template.md)
+   to your repo as `CLAUDE.md`. Fill in the always, never, and commands
+   sections with what you already know. Ten rules is plenty. See
+   [`example-hot-memory.md`](memory/hot/example-hot-memory.md) for a filled
+   version.
+7. **This week: add the task log.** Copy
+   [`TASK-LOG-template.md`](memory/episodic/TASK-LOG-template.md) and write one
+   entry per task as you finish it. Four fields, two minutes. Most entries will
+   have a blank lesson, which is fine. See
+   [`example-task-log.md`](memory/episodic/example-task-log.md).
+8. **This month: promote your first procedure.** Once the log has ten or so
+   entries, run the promotion prompt from [`COMPACTION.md`](COMPACTION.md), or
+   run [`scripts/compact`](scripts/compact). Find one lesson that has repeated
+   three times and write it up using the format in
+   [`PROCEDURES-README.md`](memory/procedural/PROCEDURES-README.md).
+
+Semantic memory can wait. Write it the first time you have to explain the
+same architectural decision twice.
+
+## What is in this repo?
+
+- [AGENTS.md](AGENTS.md): a starter instruction file for agent-facing repositories
+- [templates/AGENTS-template.md](templates/AGENTS-template.md): a copy-paste template
+- [docs/starter-checklist.md](docs/starter-checklist.md): practical harness checklist
+- [docs/task-setups.md](docs/task-setups.md): how the harness should change for debugging, research, and decisions
 - [docs/repo-structure.md](docs/repo-structure.md): sample repo layout and why it matters
-- [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): example context for the `WorkspaceHub` sample app
-- [docs/approval-policy.md](docs/approval-policy.md) and [docs/architecture-boundaries.md](docs/architecture-boundaries.md): examples of guardrails and structural boundaries
-- [examples/](examples/) and [tests/](tests/): small examples that make validation, approval, and task-specific setups visible
-- [content-agent-loop](content-agent-loop): an autonomous content loop built on the same principles
-- [demo/](demo/): dashboard, log, and script assets for showing feedback loops
+- [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): example repo-local context for the `WorkspaceHub` sample app
+- [docs/approval-policy.md](docs/approval-policy.md) and [docs/architecture-boundaries.md](docs/architecture-boundaries.md): public examples of guardrails and structural boundaries
+- [examples/](examples/) and [tests/](tests/): lightweight examples that make validation, approval, verification, and task-specific setups visible
+- [content-agent-loop](content-agent-loop): A real-world autonomous content creation loop (research → draft → self-critique → refine) built using loop engineering principles
+- [demo/](demo/): simple dashboard, log, shell-script, and task-matrix assets for showing feedback loops and setup differences
+- [memory/](memory/): the four memory tiers, with a template and a filled example in each
+- [COMPACTION.md](COMPACTION.md): how information moves between tiers, and the monthly review ritual
+- [scripts/](scripts/): `log-task`, `hotmem`, and `compact`
