@@ -66,6 +66,9 @@ Let the agent see whether its work actually worked:
 
 The faster an agent can observe failure, the faster it can recover.
 
+See [VERIFICATION.md](VERIFICATION.md) for the four verification loops, with
+a ready prompt for each.
+
 ## Memory
 
 The newest part of this kit: memory. A harness that remembers gets better over time.
@@ -78,6 +81,10 @@ Splitting memory into tiers fixes both halves of that. Only the small
 always-on tier costs you context on every request. The rest loads when it
 is relevant. And because the tiers are separate, information can move
 between them, which is what makes the agent get better over time.
+
+For how Claude Code, Hermes, and Grok Bot each build a slice of this model,
+see how real harnesses implement these tiers in
+[HARNESSES.md](HARNESSES.md).
 
 ```
                     loaded          size
