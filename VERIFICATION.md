@@ -121,6 +121,33 @@ confident.
 
 See the May 2026 survey [Code as Agent Harness](https://arxiv.org/abs/2605.18747).
 
+## The loops in the wild
+
+The same three harnesses covered in [HARNESSES.md](HARNESSES.md) each ship one
+of these loops in production. None of them ships the same one.
+
+**Claude Code** runs a generator and evaluator loop through the `/goal`
+command. You set a goal with a binary completion condition, and after every
+turn a separate fast model checks whether the condition is met. The loop ends
+when the check passes. This is external review built into the loop: the
+checker is never the doer.
+
+**Hermes Agent** has the agent create skills from its own experience, then
+grades them with the Curator, which scores every skill on real usage telemetry
+and archives any that sit unused for ninety days. It operates only on skills
+the agent wrote itself. This is golden-examples thinking applied over time. The
+usage record is the reference, and the agent's confidence never enters the
+decision.
+
+**Grok Bot** documents a multi-bot pattern that includes a checker bot whose
+job is watching the other bots. It nudges a stalled bot once, stays silent
+while work moves, and escalates to the human only when a person must decide.
+Every bot reports the moment it cannot make progress instead of retrying. This
+is external review as supervision, with the human as the final verifier.
+
+Three harnesses, three designs, one shared instinct: the work gets checked by
+something outside the model that made it.
+
 ## Where this fits
 
 The memory tiers make a harness that remembers. That is
