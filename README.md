@@ -6,6 +6,8 @@ New here? Start with [the 3 upgrades](docs/three-upgrades.md).
 
 Done those? [The loop](docs/harness-loop.md) is how you test them, based on Google's Harness² paper.
 
+Want to see one in action? [Three harnesses, one task](docs/three-harnesses.md) gives Claude Code, Codex and Hermes the same prompt and compares what each one built.
+
 Curious what all of this costs? [The harness tax](docs/harness-tax.md) shows how to measure what Claude Code loads before you type, and what to cut.
 
 Want the full setup? [docs/my-setup.md](docs/my-setup.md) has the three pieces.
