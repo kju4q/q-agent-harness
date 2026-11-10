@@ -121,4 +121,85 @@ The prompt said to reuse the card component from the home page and not to touch 
 
 ## What one line changed
 
-Rerun results land here after the second experiment.
+I ran it again the next day with the same prompt, the same starting commit (`e163859`) and the same model per tool: Claude Code and Hermes on Opus 5.5, Codex on `gpt-6-astra`. The only change was one line in the file each tool reads first. Claude Code got this in `CLAUDE.md`: "When the brief and the design reference disagree, the reference wins, and tell me where." Codex got this in `AGENTS.md`: "Never edit files outside the page you were asked to build, even to refactor. Duplicate instead and say so." Hermes got this in `AGENTS.md`: "Before any decision with two reasonable options, ask me, then continue."
+
+### Claude Code
+
+**Different from yesterday:** It followed the reference wherever it disagreed with the brief and listed the 5 places in its report: the type filters, the extra card fields, the intro paragraph, the empty state and the moment dot. It was the only tool to build all five type filters from the reference (prompt, skill, doc, gist, repo), so prompt and skill always show the empty state with today's data. It wrote no separate card component this time. The card markup lives in `Library.tsx` and the home page is untouched.
+
+**Asked:** nothing.
+
+**Changed:**
+
+- `src/content/resources.json`: the 8 entries.
+- `src/lib/content/resources.ts`: types, the moment and type lists, and the filter function.
+- `src/components/resources/Library.tsx`: the filters, the count, the cards and the empty state.
+- `src/app/resources/layout.tsx`: wraps the route in the home page shell and loads `home-page.css`.
+- `src/app/resources/page.tsx`: nav, header, library and footer.
+- `src/app/resources/resources.css`: 75 lines of page styles.
+- `public/cloud.svg`: a copy of the cloud sticker.
+- `vitest.config.mts` and `src/app/resources/page.test.tsx`: the test.
+- `package.json` and `package-lock.json`: a `test` script and 1 dev dependency (Vitest 3.2.7). Yesterday it added 4.
+
+**Verified:** 4 of 4 tests pass. They render the library to static HTML, check all 11 filter buttons and 8 cards, and call the filter function directly. Nothing gets clicked. The type check (`tsc`) and `npm run build` pass, and it counted the cards by moment in the prerendered HTML.
+
+**Time:** 3m47s.
+
+**Edge:** The repo had no test runner, and it picked Vitest without asking. It only mentioned the alternatives in its final report.
+
+### Codex
+
+**Different from yesterday:** It kept every file inside `src/app/resources`. Yesterday it pulled a shared `Card.tsx` out of the home feed and edited `Featured.tsx`. Today it copied the card markup and 138 lines of shell styles from the home page into the route and said so in a comment. It still imports `NavPill` and `HomeFooter` unchanged.
+
+**Asked:** once, for network access to rerun the build.
+
+**Changed:**
+
+- `src/app/resources/resources.json`: the 8 entries.
+- `src/app/resources/page.tsx`: nav, header, library and footer.
+- `src/app/resources/resource-library.tsx`: the filters, the count, the cards and the empty state, with the cloud as inline SVG in token colors.
+- `src/app/resources/resources.css`: 138 lines, the copied shell styles plus the page styles.
+- `src/app/resources/resources.test.cjs`: the test.
+
+No new packages and no change to `package.json`.
+
+**Verified:** 22 of 22 tests pass with Node's built-in test runner. The type check (`tsc`), git's whitespace check and a parse of the new CSS pass. The production build did not pass in its session.
+
+**Time:** 5m42s.
+
+**Edge:** `npm run build` failed twice. Inside the sandbox it couldn't reach Google Fonts. After I allowed network access, the rerun failed again in the `next/font` loader. Codex ended by reporting the build as blocked. The same worktree built fine when run outside its sandbox after the session.
+
+### Hermes
+
+**Different from yesterday:** It asked before deciding. Yesterday it asked nothing and listed five "decisions you should check" at the end. Today it asked four questions in one batch before writing a file, then one more when the Vitest install hit a peer conflict. On my answers it added Vitest and Testing Library, where yesterday it had used zero dependencies. It still builds each card from the home `.box` class plus its own `.rc` class.
+
+**Asked:** five questions, all before it wrote any file:
+
+1. The reference's extra card fields or only the four in the brief?
+2. A zero-dependency test or Vitest with Testing Library?
+3. The cloud at 96px or 72px?
+4. Should the keyword chip copy on click?
+5. How to fix the Vitest peer conflict: pin Vitest 3, bump `@types/node`, or force the install?
+
+**Changed:**
+
+- `src/content/resources.json`: the 8 entries.
+- `src/lib/content/resources.ts`: types, the moment and type lists, the filter function and the count label.
+- `src/components/resources/ResourceLibrary.tsx`: the filters, the count, the cards and the empty state.
+- `src/app/resources/layout.tsx`: wraps the route in the home page shell and loads `home-page.css`.
+- `src/app/resources/page.tsx`: nav, header, library and footer.
+- `src/app/resources/resources-page.css`: 86 lines of page styles.
+- `vitest.config.mts` and `tests/resources-page.test.tsx`: the test.
+- `package.json` and `package-lock.json`: a `test` script and 5 dev dependencies (Vitest 3, jsdom and three Testing Library packages).
+
+**Verified:** 2 of 2 tests pass. The second test clicks the filters and reaches the empty state. The type check (`tsc`) and `npm run build` pass, and it checked the prerendered HTML for the 8 cards. Every command ran on Node 22.23.4 from nvm.
+
+**Time:** 8m59s.
+
+**Edge:** Its first step was to read the `design-reference-to-nextjs-page` skill it wrote itself yesterday, which recommends a zero-dependency test. Its last step was to update that skill to record that I picked Vitest and how to pin it. Whatever it learned on this run, it will read again next time.
+
+### The winner depends on what you want
+
+- Hermes if you want it to ask first.
+- Codex if you want speed and self-checks.
+- Claude Code if you want it to tell you where your brief is wrong.
