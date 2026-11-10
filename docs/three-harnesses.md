@@ -201,5 +201,5 @@ No new packages and no change to `package.json`.
 ### The winner depends on what you want
 
 - Hermes if you want it to ask first.
-- Codex if you want speed and self-checks.
+- Codex if you want it to decide alone and prove its own work.
 - Claude Code if you want it to tell you where your brief is wrong.
