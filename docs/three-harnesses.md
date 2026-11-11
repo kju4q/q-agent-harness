@@ -208,4 +208,12 @@ No new packages and no change to `package.json`.
 
 [`starter/`](../starter/README.md) is the empty version of the harness from this test, ready to copy into any project. `CLAUDE.md` holds the instructions and points at the other four files: `me.md` for who you are, `feedback.md` for what the agent got wrong, `rules.md` for what it can't do, and `verify.md` for how it proves the work. `AGENTS.md` is one line that sends Codex and Hermes to `CLAUDE.md`, so all three tools read the same harness.
 
-Rerun result: pending
+### Rerun with the starter folder (Nov 11)
+
+I made two fresh worktrees from the same commit as the earlier runs and copied the `starter/` folder into the root of each, leaving out its `README.md`. I filled `me.md` with four lines and gave both tools the identical `/resources` prompt from the earlier runs.
+
+**Codex** ran `gpt-6-astra` and took 3m29s. Before writing anything it asked which card approach to take, citing `CLAUDE.md` for asking and `rules.md` for not editing shared files, and its recommended option was "adapt the home card markup inside /resources". It asked before running `npm ci`. It started a dependency audit nobody asked for and dropped it when I told it to. Every new file is under `src/app/resources`. The type check (`tsc`) passed, and the build passed after I allowed network access once for Google Fonts. It wrote 3 tests with `node:test`, and when I ran them afterwards 3 of 3 passed.
+
+**Hermes** ran Opus 5.5 through the Anthropic API and took two runs. The first died at 4m45s when the API credits ran out. The second started from a reset worktree. It read all six files first and said so, then asked four questions before building: the titles and descriptions, the sticker size (96px), whether to run `npm ci`, and which test runner to use. It built with `node:test`, 6 of 6 tests pass, the type check (`tsc`) and the build pass, and it touched no other page. It listed five places where the design docs disagreed with the brief, and it updated its own skill. Two notes. It changed `package.json` to add a `test` script, which Codex did not. And it reused a `tests/resources.test.mjs` left over from the first run, because my reset only cleaned `src/`.
+
+With the folder, both tools asked before deciding and both stayed inside the page, and the differences left are what each tool does with permission to ask.
