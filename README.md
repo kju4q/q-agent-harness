@@ -8,6 +8,8 @@ Done those? [The loop](docs/harness-loop.md) is how you test them, based on Goog
 
 Want to see one in action? [Three harnesses, one task](docs/three-harnesses.md) gives Claude Code, Codex and Hermes the same prompt and compares what each one built.
 
+Want that harness in your own project? [The starter folder](starter/README.md) is the empty version of it, five files you copy into your project root and fill in.
+
 Curious what all of this costs? [The harness tax](docs/harness-tax.md) shows how to measure what Claude Code loads before you type, and what to cut.
 
 Want the full setup? [docs/my-setup.md](docs/my-setup.md) has the three pieces.

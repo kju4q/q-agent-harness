@@ -203,3 +203,9 @@ No new packages and no change to `package.json`.
 - Hermes if you want it to ask first.
 - Codex if you want it to decide alone and check its own work.
 - Claude Code if you want it to tell you where your brief is wrong.
+
+## The starter folder
+
+[`starter/`](../starter/README.md) is the empty version of the harness from this test, ready to copy into any project. `CLAUDE.md` holds the instructions and points at the other four files: `me.md` for who you are, `feedback.md` for what the agent got wrong, `rules.md` for what it can't do, and `verify.md` for how it proves the work. `AGENTS.md` is one line that sends Codex and Hermes to `CLAUDE.md`, so all three tools read the same harness.
+
+Rerun result: pending
