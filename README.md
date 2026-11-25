@@ -235,6 +235,7 @@ same architectural decision twice.
 - [docs/task-setups.md](docs/task-setups.md): how the harness should change for debugging, research, and decisions
 - [docs/harness-loop.md](docs/harness-loop.md): Google's eight harness components mapped onto this kit, and their propose, run, compare, keep, log loop written as a one-session checklist
 - [docs/harness-tax.md](docs/harness-tax.md): how to measure what Claude Code loads before you type with `/context`, and what to cut first
+- [docs/three-habits.md](docs/three-habits.md): three habits for when Claude Code feels expensive and sloppy at the same time: a script instead of forty edits, Haiku for the boring stretch, and clear instead of arguing
 - [docs/repo-structure.md](docs/repo-structure.md): sample repo layout and why it matters
 - [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/operations.md](docs/operations.md): example repo-local context for the `WorkspaceHub` sample app
 - [docs/approval-policy.md](docs/approval-policy.md) and [docs/architecture-boundaries.md](docs/architecture-boundaries.md): public examples of guardrails and structural boundaries
