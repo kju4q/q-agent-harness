@@ -14,6 +14,17 @@ Don't edit the files one by one. Write me one script that does it, show me the s
 
 Before I say ok, I check two things. The script needs a dry run mode that prints every change without writing anything. And it has to check git status first and refuse to run if there are uncommitted changes, so git can always take me back to where I started.
 
+```bash
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Uncommitted changes. Commit or stash first." >&2
+  exit 1
+fi
+```
+
+```
+./script.sh --dry-run
+```
+
 ## 2. Haiku for the boring stretch
 
 Not every task needs the big model. Commit messages, renames, docs, and tests written from a spec go to Haiku. Decisions, debugging, and anything that touches data stay on Opus.
